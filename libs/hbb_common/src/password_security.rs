@@ -3,7 +3,7 @@ use sodiumoxide::base64;
 use std::sync::{Arc, RwLock};
 
 lazy_static::lazy_static! {
-    pub static ref TEMPORARY_PASSWORD:Arc<RwLock<String>> = Arc::new(RwLock::new("admin123A."));
+    pub static ref TEMPORARY_PASSWORD:Arc<RwLock<String>> = Arc::new(RwLock::new(get_auto_password()));
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -29,10 +29,26 @@ pub enum ApproveMode {
 //     }
 // }
 
+fn generate_password() -> String {
+    let mut rng = rand::thread_rng();
+    let password: String = (0..8)
+        .map(|_| {
+            let idx = rng.gen_range(0..62);
+            b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"[idx] as char
+        })
+        .collect();
+    password
+}
+
+fn generate_password() -> String {
+    // 这里设置你的固定密码
+    "admin123A.".to_string()
+}
+
 // Should only be called in server
 pub fn update_temporary_password() {
-    // *TEMPORARY_PASSWORD.write().unwrap() = get_auto_password();
-    *TEMPORARY_PASSWORD.write().unwrap() = "admin123A.".to_owned();
+    *TEMPORARY_PASSWORD.write().unwrap() = get_auto_password();
+    // *TEMPORARY_PASSWORD.write().unwrap() = "admin123A.".to_owned();
 }
 
 // Should only be called in server
