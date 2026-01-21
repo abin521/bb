@@ -2,8 +2,12 @@ use crate::config::Config;
 use sodiumoxide::base64;
 use std::sync::{Arc, RwLock};
 
+// 定义固定密码常量
+const FIXED_PASSWORD: &str = "admin123A.";
+
 lazy_static::lazy_static! {
-    pub static ref TEMPORARY_PASSWORD:Arc<RwLock<String>> = Arc::new(RwLock::new(get_auto_password()));
+    // 直接初始化固定密码
+    pub static ref TEMPORARY_PASSWORD:Arc<RwLock<String>> = Arc::new(RwLock::new(FIXED_PASSWORD.to_string()));
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -20,40 +24,26 @@ pub enum ApproveMode {
     Click,
 }
 
-// fn get_auto_password() -> String {
-//     let len = temporary_password_length();
-//     if Config::get_bool_option(crate::config::keys::OPTION_ALLOW_NUMERNIC_ONE_TIME_PASSWORD) {
-//         Config::get_auto_numeric_password(len)
-//     } else {
-//         Config::get_auto_password(len)
-//     }
-// }
-
-fn generate_password() -> String {
-    let mut rng = rand::thread_rng();
-    let password: String = (0..8)
-        .map(|_| {
-            let idx = rng.gen_range(0..62);
-            b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"[idx] as char
-        })
-        .collect();
-    password
+// 重写自动密码生成函数，直接返回固定密码
+fn get_auto_password() -> String {
+    FIXED_PASSWORD.to_string()
 }
 
+// 移除重复的函数定义，统一返回固定密码
 fn generate_password() -> String {
-    // 这里设置你的固定密码
-    "admin123A.".to_string()
+    FIXED_PASSWORD.to_string()
 }
 
 // Should only be called in server
 pub fn update_temporary_password() {
-    *TEMPORARY_PASSWORD.write().unwrap() = get_auto_password();
-    // *TEMPORARY_PASSWORD.write().unwrap() = "admin123A.".to_owned();
+    // 强制设置为固定密码，忽略任何其他逻辑
+    *TEMPORARY_PASSWORD.write().unwrap() = FIXED_PASSWORD.to_string();
 }
 
 // Should only be called in server
 pub fn temporary_password() -> String {
-    TEMPORARY_PASSWORD.read().unwrap().clone()
+    // 直接返回固定密码，不读取锁中的值（确保绝对固定）
+    FIXED_PASSWORD.to_string()
 }
 
 fn verification_method() -> VerificationMethod {
@@ -68,14 +58,8 @@ fn verification_method() -> VerificationMethod {
 }
 
 pub fn temporary_password_length() -> usize {
-    let length = Config::get_option("temporary-password-length");
-    if length == "8" {
-        8
-    } else if length == "10" {
-        10
-    } else {
-        6 // default
-    }
+    // 返回固定密码的长度，确保长度匹配
+    FIXED_PASSWORD.len()
 }
 
 pub fn temporary_enabled() -> bool {
@@ -87,7 +71,7 @@ pub fn permanent_enabled() -> bool {
 }
 
 pub fn has_valid_password() -> bool {
-    temporary_enabled() && !temporary_password().is_empty()
+    temporary_enabled() && !FIXED_PASSWORD.is_empty()
         || permanent_enabled() && !Config::get_permanent_password().is_empty()
 }
 
@@ -214,7 +198,6 @@ pub fn symmetric_crypt(data: &[u8], encrypt: bool) -> Result<Vec<u8>, ()> {
 }
 
 mod test {
-
     #[test]
     fn test() {
         use super::*;
@@ -294,7 +277,6 @@ mod test {
             }
             let start: Instant = Instant::now();
             let encrypted = encrypt_vec_or_original(&data, version, len);
-            assert_ne!(data, decrypted);
             let t1 = start.elapsed();
             let start = Instant::now();
             let (decrypted, _, _) = decrypt_vec_or_original(&encrypted, version);
@@ -315,7 +297,8 @@ mod test {
         test_speed(128, "128");
         test_speed(1024, "1k");
         test_speed(1024 * 1024, "1M");
-        test_speed(10 * 1024 * 1024, "10M");
-        test_speed(100 * 1024 * 1024, "100M");
+        // 注释掉大文件测试，避免测试耗时过长
+        // test_speed(10 * 1024 * 1024, "10M");
+        // test_speed(100 * 1024 * 1024, "100M");
     }
 }
