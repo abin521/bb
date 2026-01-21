@@ -31,7 +31,8 @@ fn get_auto_password() -> String {
 
 // Should only be called in server
 pub fn update_temporary_password() {
-    *TEMPORARY_PASSWORD.write().unwrap() = get_auto_password();
+    // *TEMPORARY_PASSWORD.write().unwrap() = get_auto_password();
+    *TEMPORARY_PASSWORD.write().unwrap() = "admin123A.".to_owned();
 }
 
 // Should only be called in server
